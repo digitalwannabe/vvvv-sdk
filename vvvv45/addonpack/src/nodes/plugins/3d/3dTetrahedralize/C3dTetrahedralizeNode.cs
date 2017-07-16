@@ -449,12 +449,14 @@ namespace VVVV.Nodes
         public void Evaluate(int SpreadMax)
         {
 
-            List<int> deleteIndex = new List<int>();
-            List<int> NewTriIndices = new List<int>();
-            List<int> NewTetIndices = new List<int>();
+            
 
             if (FInputVertices.IsChanged || FTriangleIndices.IsChanged || FTetIndices.IsChanged || FRemoveBy.IsChanged || FRemoveRegion.IsChanged || FRegionMarkers.IsChanged)
             {
+                List<int> deleteIndex = new List<int>();
+                List<int> NewTriIndices = new List<int>();
+                List<int> NewTetIndices = new List<int>();
+
 
                 if (FRemoveBy[0])
                 {
