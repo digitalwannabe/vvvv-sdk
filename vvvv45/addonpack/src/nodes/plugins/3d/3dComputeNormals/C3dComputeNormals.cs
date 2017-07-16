@@ -21,7 +21,7 @@ using System.Reflection;
 namespace VVVV.Nodes
 {
 	#region PluginInfo
-	[PluginInfo(Name = "ComputeNormals", Category = "3d", Author="digitalWannabe", Credits = "libigl ETH Zurich, lichterloh",Help = "Compute  face/vertex/corner normals for triangulated surface mesh", Tags = "cgal, normals, lichterloh, dope")]
+	[PluginInfo(Name = "ComputeNormals", Category = "3d", Author="digitalWannabe", Credits = "libigl ETH Zurich, lichterloh",Help = "Compute face/vertex/corner normals for triangulated surface mesh", Tags = "cgal, normals, lichterloh, dope")]
 	#endregion PluginInfo
 	public unsafe class C3dComputeNormalsNode : IPluginEvaluate, IDisposable
     {
@@ -83,6 +83,14 @@ namespace VVVV.Nodes
             
         }
 
+        public enum WeightingType
+        {
+            Uniform,
+            Area,
+            Angle,
+            Default
+
+        }
 
         /// dll import
         [System.Runtime.InteropServices.DllImport("libigl_Normals.dll")]
@@ -105,7 +113,7 @@ namespace VVVV.Nodes
         public ISpread<bool> FDoVertex;
 
         [Input("Vertex Normals Wheighting", DefaultValue = 3, MaxValue = 4, MinValue = 0)]
-        public ISpread<uint> VM;
+        public ISpread<WeightingType> VM;
 
         [Input("Compute Corner Normals")]
         public ISpread<bool> FDoCorner;
@@ -128,25 +136,23 @@ namespace VVVV.Nodes
         [Output("Corner Normals ", BinVisibility = PinVisibility.Hidden)]
         public ISpread<ISpread<Vector3D>> FCornerOut;
 
-    	
 
-		[Import()]
+        [Import()]
 		public ILogger FLogger;
         #endregion fields & pins
 
         //        string importDLL = pathToPlatformDLL();
-
+        
 
         //called when data for any output pin is requested
         public void Evaluate(int SpreadMax)
         {
-            SpreadMax = SpreadUtils.SpreadMax(FVec, FVec/*,FPA,FPM*/);
+            SpreadMax = SpreadUtils.SpreadMax(FVec, FTI, VM, FDA/*,FPA,FPM*/);
             FFaceOut.SliceCount = SpreadMax;
             FVertexOut.SliceCount = SpreadMax;
             FCornerOut.SliceCount = SpreadMax;
 
-
-
+ 
             if (FCal[0])
             {
                 var help = new Helpers();
@@ -177,7 +183,7 @@ namespace VVVV.Nodes
 
                     try
                     {
-                        ComputeNormals(V, tI, faceN, vertexN, cornerN, FDA[binID], VM[binID], binSizes, FDoFace[binID], FDoVertex[binID], FDoCorner[binID]);
+                        ComputeNormals(V, tI, faceN, vertexN, cornerN, FDA[binID], (uint)VM[binID], binSizes, FDoFace[binID], FDoVertex[binID], FDoCorner[binID]);
                     }
                     catch (Exception ex)
                     {

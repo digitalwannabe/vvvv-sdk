@@ -42,7 +42,9 @@
     <Content Include="dependencies\x64\libigl_Normals.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="dependencies\x86\libigl_Normals.dll" />
+    <Content Include="dependencies\x86\libigl_Normals.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.Targets" />
 </Project>
