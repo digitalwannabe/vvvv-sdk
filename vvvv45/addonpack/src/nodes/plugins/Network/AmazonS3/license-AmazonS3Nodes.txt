@@ -1,0 +1,12 @@
+vvvv AmazonS3Nodes Plugin is (c) digitalWannabe
+
+licensed under the:
+GNU Lesser General Public License (LGPL)
+http://www.gnu.org/licenses/lgpl.html
+
+
+Using:
+Amazon .Net SDK
+
+
+
