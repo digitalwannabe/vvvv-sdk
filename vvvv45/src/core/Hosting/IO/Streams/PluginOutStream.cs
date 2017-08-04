@@ -105,7 +105,15 @@ namespace VVVV.Hosting.IO.Streams
         
         protected override void SetSlice(int index, EnumEntry value)
         {
-            FEnumOut.SetOrd(index, value.Index);
+            FEnumOut.SetString(index, value.Name);
+        }
+    }
+
+    internal static class DynamicAssemblyTypeHelpers
+    {
+        public static bool UsesDynamicAssembly(this Type type)
+        {
+            return type.Assembly.IsDynamic || (type.IsGenericType && type.GetGenericArguments().Any(t => UsesDynamicAssembly(t)));
         }
     }
     
@@ -114,31 +122,20 @@ namespace VVVV.Hosting.IO.Streams
         private readonly INodeOut FNodeOut;
         
         public NodeOutStream(INodeOut nodeOut)
-            : this(nodeOut, new DefaultConnectionHandler())
-        {
-            
-        }
+            : this(nodeOut, null)
+        {}
         
         public NodeOutStream(INodeOut nodeOut, IConnectionHandler handler)
         {
             FNodeOut = nodeOut;
-            if (UsesDynamicAssembly(typeof(T)))
-            {
+            if (typeof(T).UsesDynamicAssembly())
                 FNodeOut.SetInterface(new DynamicTypeWrapper(this));
-                FNodeOut.SetConnectionHandler(handler, new DynamicTypeWrapper(this));
-            }
             else
-            {
                 FNodeOut.SetInterface(this);
-                FNodeOut.SetConnectionHandler(handler, this);
-            }
+            if (handler != null)
+                FNodeOut.SetConnectionHandler(handler, null);
         }
 
-        bool UsesDynamicAssembly(Type type)
-        {
-            return type.Assembly.IsDynamic || (type.IsGenericType && type.GetGenericArguments().Any(t => UsesDynamicAssembly(t)));
-        }
-        
         object IGenericIO.GetSlice(int index)
         {
             return this[VMath.Zmod(index, Length)];
@@ -166,6 +163,7 @@ namespace VVVV.Hosting.IO.Streams
         {
             FNodeOut = nodeOut;
             FNodeOut.SetInterface(FKeyboards.Stream);
+            SetLength(nodeOut.SliceCount);
         }
 
         public void Dispose()
@@ -177,16 +175,7 @@ namespace VVVV.Hosting.IO.Streams
         {
             if (force || IsChanged)
             {
-                FSubjects.ResizeAndDispose(Length);
-                FKeyboardStates.ResizeAndDismiss(Length);
-                FKeyboards.ResizeAndDismiss(
-                    Length,
-                    slice =>
-                    {
-                        var subject = FSubjects[slice];
-                        return new Keyboard(subject, true);
-                    }
-                );
+                SetLength(Length);
                 for (int i = 0; i < Length; i++)
                 {
                     var keyboardState = this.Buffer[i];
@@ -209,6 +198,24 @@ namespace VVVV.Hosting.IO.Streams
             }
             base.Flush(force);
         }
+
+        private void SetLength(int length)
+        {
+            if (length != Length)
+            {
+                FSubjects.ResizeAndDispose(length);
+                FKeyboardStates.ResizeAndDismiss(length);
+                FKeyboards.ResizeAndDismiss(
+                    length,
+                    slice =>
+                    {
+                        var subject = FSubjects[slice];
+                        return new Keyboard(subject, true);
+                    }
+                );
+                this.ResizeAndDismiss(length, () => KeyboardState.Empty);
+            }
+        }
     }
 
     class MouseStateToMouseOutStream : MemoryIOStream<MouseState>, IDisposable
@@ -222,6 +229,7 @@ namespace VVVV.Hosting.IO.Streams
         {
             FNodeOut = nodeOut;
             FNodeOut.SetInterface(FMouses.Stream);
+            SetLength(nodeOut.SliceCount);
         }
 
         public void Dispose()
@@ -233,16 +241,7 @@ namespace VVVV.Hosting.IO.Streams
         {
             if (force || IsChanged)
             {
-                FSubjects.ResizeAndDispose(Length);
-                FMouseStates.ResizeAndDismiss(Length);
-                FMouses.ResizeAndDismiss(
-                    Length,
-                    slice =>
-                    {
-                        var subject = FSubjects[slice];
-                        return new Mouse(subject);
-                    }
-                );
+                SetLength(Length);
                 for (int i = 0; i < Length; i++)
                 {
                     var mouseState = this.Buffer[i];
@@ -290,6 +289,24 @@ namespace VVVV.Hosting.IO.Streams
                 FNodeOut.MarkPinAsChanged();
             }
             base.Flush(force);
+        }
+
+        private void SetLength(int length)
+        {
+            if (length != Length)
+            {
+                FSubjects.ResizeAndDispose(length);
+                FMouseStates.ResizeAndDismiss(length);
+                FMouses.ResizeAndDismiss(
+                    length,
+                    slice =>
+                    {
+                        var subject = FSubjects[slice];
+                        return new Mouse(subject);
+                    }
+                );
+                this.ResizeAndDismiss(length, () => MouseState.Create(0, 0, false, false, false, false, false, 0));
+            }
         }
 
         static Point ToMousePoint(Vector2D normV)

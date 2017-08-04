@@ -145,8 +145,10 @@ namespace VVVV.Hosting.IO.Streams
                 for (int i = 0; i < Length; i++)
                 {
                     int ord;
+                    string name;
                     FEnumIn.GetOrd(i, out ord);
-                    writer.Write(new EnumEntry(FEnumName, ord));
+                    FEnumIn.GetString(i, out name);
+                    writer.Write(new EnumEntry(FEnumName, ord, name));
                 }
             }
         }
@@ -285,24 +287,27 @@ namespace VVVV.Hosting.IO.Streams
 
         public NodeInStream(INodeIn nodeIn, IConnectionHandler handler, T defaultValue = default(T))
         {
+            handler = handler ?? new DefaultConnectionHandler(null, typeof(T));
             FNodeIn = nodeIn;
-            if (typeof(T).Assembly.IsDynamic)
-                FNodeIn.SetConnectionHandler(handler, new DynamicTypeWrapper(this));
+            object inputInterface;
+            if (typeof(T).UsesDynamicAssembly())
+                inputInterface = new DynamicTypeWrapper(this);
             else
-                FNodeIn.SetConnectionHandler(handler, this);
+                inputInterface = this;
+            FNodeIn.SetConnectionHandler(handler, inputInterface);
             FAutoValidate = nodeIn.AutoValidate;
             FDefaultValue = defaultValue;
             FUpstreamStream = FNullStream;
         }
 
         public NodeInStream(INodeIn nodeIn)
-            : this(nodeIn, new DefaultConnectionHandler())
+            : this(nodeIn, null)
         {
         }
 
         public IStreamReader<T> GetReader()
         {
-            if (FNodeIn.IsConvoluted)
+            if (FNodeIn.IsConvoluted || FUpstreamStream.Length != FLength)
                 return new ConvolutedReader(FUpstreamStream, FLength, FUpStreamSlices);
             return FUpstreamStream.GetReader();
         } 
@@ -324,11 +329,13 @@ namespace VVVV.Hosting.IO.Streams
             {
                 object usI;
                 FNodeIn.GetUpstreamInterface(out usI);
+
                 FNodeIn.GetUpStreamSlices(out FLength, out FUpStreamSlices);
                 // Check fastest way first: TUpstream == T 
                 var wrapper = usI as DynamicTypeWrapper;
                 if (wrapper != null)
                     usI = wrapper.Value;
+
                 FUpstreamStream = usI as MemoryIOStream<T>;
                 if (FUpstreamStream == null)
                 {
@@ -475,7 +482,8 @@ namespace VVVV.Hosting.IO.Streams
         private readonly bool FAutoValidate;
         private readonly Spread<Subscription<Mouse, MouseNotification>> FSubscriptions = new Spread<Subscription<Mouse, MouseNotification>>();
         private readonly Spread<int> FRawMouseWheels = new Spread<int>();
-        
+        private readonly Spread<int> FRawMouseHWheels = new Spread<int>();
+
         public MouseToMouseStateInStream(IIOFactory factory, INodeIn nodeIn)
         {
             FFactory = factory;
@@ -505,6 +513,7 @@ namespace VVVV.Hosting.IO.Streams
                 Length = FNodeIn.SliceCount;
 
                 FRawMouseWheels.SliceCount = Length;
+                FRawMouseHWheels.SliceCount = Length;
                 FSubscriptions.ResizeAndDispose(
                     Length,
                     slice =>
@@ -522,20 +531,26 @@ namespace VVVV.Hosting.IO.Streams
                                 {
                                     case MouseNotificationKind.MouseDown:
                                         var downNotification = n as MouseButtonNotification;
-                                        mouseState = new MouseState(normalizedPosition.x, normalizedPosition.y, mouseState.Buttons | downNotification.Buttons, mouseState.MouseWheel);
+                                        mouseState = new MouseState(normalizedPosition.x, normalizedPosition.y, mouseState.Buttons | downNotification.Buttons, mouseState.MouseWheel, mouseState.MouseHorizontalWheel);
                                         break;
                                     case MouseNotificationKind.MouseUp:
                                         var upNotification = n as MouseButtonNotification;
-                                        mouseState = new MouseState(normalizedPosition.x, normalizedPosition.y, mouseState.Buttons & ~upNotification.Buttons, mouseState.MouseWheel);
+                                        mouseState = new MouseState(normalizedPosition.x, normalizedPosition.y, mouseState.Buttons & ~upNotification.Buttons, mouseState.MouseWheel, mouseState.MouseHorizontalWheel);
                                         break;
                                     case MouseNotificationKind.MouseMove:
-                                        mouseState = new MouseState(normalizedPosition.x, normalizedPosition.y, mouseState.Buttons, mouseState.MouseWheel);
+                                        mouseState = new MouseState(normalizedPosition.x, normalizedPosition.y, mouseState.Buttons, mouseState.MouseWheel, mouseState.MouseHorizontalWheel);
                                         break;
                                     case MouseNotificationKind.MouseWheel:
                                         var wheelNotification = n as MouseWheelNotification;
                                         FRawMouseWheels[slice] += wheelNotification.WheelDelta;
                                         var wheel = (int)Math.Round((float)FRawMouseWheels[slice] / Const.WHEEL_DELTA);
-                                        mouseState = new MouseState(normalizedPosition.x, normalizedPosition.y, mouseState.Buttons, wheel);
+                                        mouseState = new MouseState(normalizedPosition.x, normalizedPosition.y, mouseState.Buttons, wheel, mouseState.MouseHorizontalWheel);
+                                        break;
+                                    case MouseNotificationKind.MouseHorizontalWheel:
+                                        var hwheelNotification = n as MouseHorizontalWheelNotification;
+                                        FRawMouseHWheels[slice] += hwheelNotification.WheelDelta;
+                                        var hwheel = (int)Math.Round((float)FRawMouseHWheels[slice] / Const.WHEEL_DELTA);
+                                        mouseState = new MouseState(normalizedPosition.x, normalizedPosition.y, mouseState.Buttons, mouseState.MouseWheel, hwheel);
                                         break;
                                 }
                                 SetMouseState(slice, ref mouseState);

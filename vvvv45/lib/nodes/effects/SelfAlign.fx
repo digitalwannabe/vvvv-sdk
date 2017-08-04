@@ -1,5 +1,5 @@
 //@author: vvvv group
-//@help: aligns the orientation of a geometry to the camera
+//@help: Aligns the orientation of a geometry to the camera.
 //@tags: billboard, view space
 //@credits:
 
@@ -14,13 +14,19 @@ float4x4 tWV: WORLDVIEW;
 float4x4 tWVP: WORLDVIEWPROJECTION;
 float4x4 tP: PROJECTION;   //projection matrix as set via Renderer (EX9)
 
-float4x4 tA <string uiname="Second Transform";>;
+float4x4 tA <string uiname="Transform in Viewspace";>;
 
-//alpha
+//material properties
+float4 cAmb : COLOR <String uiname="Color";>  = {1, 1, 1, 1};
 float Alpha <float uimin=0.0; float uimax=1.0;> = 1;
 
 //texture
 texture Tex <string uiname="Texture";>;
+
+//fixed size
+bool fixedSize <string uiname = "Fixed Size"; > = false;
+float2 Size = float2 (0.2, 0.2);
+
 sampler Samp = sampler_state    //sampler for doing the texture-lookup
 {
     Texture   = (Tex);          //apply a texture to the sampler
@@ -42,7 +48,6 @@ struct vs2ps
 // --------------------------------------------------------------------------------------------------
 // VERTEXSHADERS
 // --------------------------------------------------------------------------------------------------
-
 vs2ps VS(
     float4 PosO: POSITION,
     float3 NormO: NORMAL,
@@ -54,11 +59,36 @@ vs2ps VS(
     //normal in view space
     Out.NormV = normalize(mul(NormO, tA));
 
-    //worlsview position
+    //WorldView position
     float4 pos = mul(float4(0, 0, 0, 1), tWV);
+	
+    //position
+	if (fixedSize)
+	{   
+		// Apply Projection to the world's view position
+		pos = mul (pos, tP);
+		
+		// Make a perspective division
+		pos.xyz /= pos.w;
+				
+		float aX = tP[0][0];
+		float aY = tP[1][1];
+		float3 aspectRatio = float3 (aX, aY, 1);
 
-    //position (projected)
-    Out.PosWVP  = mul(pos + mul(PosO, tA), tP);
+		// Add the Object's position multiplied by the viewspace transform
+		// to the WorldViewProjected position multiplied by the Aspect Ratio
+		Out.PosWVP = float4(pos.xyz + mul(PosO * float4(Size,1,1), tA).xyz * aspectRatio, 1);
+		
+	}
+	else
+	{
+		// Add the Object's position multiplied by the viewspace transform
+		// to the WorldView position and then apply Projection	
+		pos.xyz += mul(PosO, tA).xyz;
+		Out.PosWVP  = mul(pos, tP);
+	
+	}
+	
     Out.TexCd = mul(TexCd, tTex);
     return Out;
 }
@@ -67,14 +97,12 @@ vs2ps VS(
 // PIXELSHADERS:
 // --------------------------------------------------------------------------------------------------
 
-float4 colore : COLOR = 1;
-
 float4 PS(vs2ps In): COLOR
 {
-
-    float4 col = tex2D(Samp, In.TexCd);
-    col.a *= Alpha;
-    return mul(col*colore, tColor);
+    float4 col = tex2D(Samp, In.TexCd) * cAmb;
+    col = mul(col, tColor);
+	col.a *= Alpha;
+    return col;
 }
 
 
@@ -82,7 +110,7 @@ float4 PS(vs2ps In): COLOR
 // TECHNIQUES:
 // --------------------------------------------------------------------------------------------------
 
-technique TSelfAlign
+technique SelfAlign
 {
     pass P0
     {

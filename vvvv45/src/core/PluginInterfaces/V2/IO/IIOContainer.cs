@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices;
 using VVVV.PluginInterfaces.V1;
 using VVVV.Utils.Streams;
@@ -46,7 +48,17 @@ namespace VVVV.PluginInterfaces.V2
             get;
         }
     }
-    
+
+    /// <summary>
+    /// Implemented by spreads and streams which either use a bin size pin or are a pin group.
+    /// </summary>
+    [ComVisible(false)]
+    public interface IIOMultiPin
+    {
+        IIOContainer BaseContainer { get; }
+        IIOContainer[] AssociatedContainers { get; }
+    }
+
     [ComVisible(false)]
     public static class IOContainerExtensions
     {
@@ -63,6 +75,30 @@ namespace VVVV.PluginInterfaces.V2
                 container = container.BaseContainer;
             }
             return pluginIO;
+        }
+
+        /// <summary>
+        /// Returns the native plugin io interfaces if any.
+        /// </summary>
+        public static IEnumerable<IPluginIO> GetPluginIOs(this IIOContainer container)
+        {
+            var pluginIO = container.RawIOObject as IPluginIO;
+            if (pluginIO != null)
+                yield return pluginIO;
+            var baseContainer = container.BaseContainer;
+            if (baseContainer != null)
+            {
+                foreach (var p in baseContainer.GetPluginIOs())
+                    yield return p;
+            }
+            else
+            {
+                var containers = container.AssociatedContainers;
+                if (containers != null)
+                    foreach (var c in containers)
+                        foreach (var p in c.GetPluginIOs())
+                            yield return p;
+            }
         }
     }
 }

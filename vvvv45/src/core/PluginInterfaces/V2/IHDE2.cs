@@ -41,7 +41,19 @@ namespace VVVV.PluginInterfaces.V2
     		Window = window;
     	}
     }
-    
+
+    [ComVisible(false)]
+    public class EnumEventArgs : EventArgs
+    {
+        string FEnumName;
+        public string EnumName => FEnumName;
+
+        public EnumEventArgs(string enumName)
+        {
+            FEnumName = enumName;
+        }
+    }
+
     [ComVisible(false)]
     public class ComponentModeEventArgs : EventArgs
     {
@@ -104,7 +116,10 @@ namespace VVVV.PluginInterfaces.V2
 	
 	[ComVisible(false)]
 	public delegate void ComponentModeEventHandler(object sender, ComponentModeEventArgs args);
-    
+
+    [ComVisible(false)]
+    public delegate void EnumEventHandler(object sender, EnumEventArgs args);
+
     /// <summary>
 	/// The interface to be implemented by a program to host IHDEPlugins.
 	/// </summary>
@@ -145,11 +160,12 @@ namespace VVVV.PluginInterfaces.V2
 	    event WindowEventHandler WindowRemoved;
 	    event ComponentModeEventHandler BeforeComponentModeChange;
 	    event ComponentModeEventHandler AfterComponentModeChange;
-	    
-	    /// <summary>
-	    /// The currently selected patch window.
-	    /// </summary>
-	    IWindow2 ActivePatchWindow
+        event EnumEventHandler EnumChanged;
+
+        /// <summary>
+        /// The currently selected patch window.
+        /// </summary>
+        IWindow2 ActivePatchWindow
 	    {
 	    	get;
 	    }
@@ -378,6 +394,11 @@ namespace VVVV.PluginInterfaces.V2
         /// By using this you can potenitally reduce latency.
         /// </summary>
         void SetFrameTimeProvider(ITimeProvider timeProvider);
+
+        /// <summary>
+        /// The version of vvvv. Will for example return "35.5.0.0" for the officially called beta 35.5
+        /// </summary>
+        Version Version { get; }
     }
     #endregion IHDEHost
 

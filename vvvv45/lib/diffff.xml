@@ -1448,5 +1448,159 @@
   	  <PIN old="Maximum forground fps" new="Maximum Foreground FPS" />
 	  <PIN old="Maximum background fpsS" new="Maximum Background FPS" />
   	</NODE>
+	<NODE old="AudioRecordSelector (System)" new="AudioRecordSelector (System Legacy)"></NODE>
+	<NODE old="FFT (DShow9 4Channels WinXP)" new="FFT (DShow9 4Channels WinXP legacy)"></NODE>
   </PATCH>
+  <PATCH version="50alpha34.105">
+	<NODE old=":MODULES:\vvvv group\3D\Resample (3D Vector).v4p" new="Resample (3d Vector Legacy)">
+  	</NODE>
+	<NODE old="Resample (3D Vector).v4p" new="Resample (3d Vector Legacy)">
+  	</NODE>
+	<NODE old="Resample (3D Vector)" new="Resample (3d Vector Legacy)">
+  	</NODE>
+	<NODE old=":MODULES:\vvvv group\Color\Resample (Color).v4p" new="Resample (Color)">
+  	</NODE>
+	<NODE old="Resample (Color)">
+  	  <PIN old="spread" new="Input" />
+	  <PIN old="mode" new="Mode" />
+	  <PIN old="cyclic spread" new="Cyclic Spread" />
+	  <PIN old="hermite tension" new="Hermite Tension" />
+	  <PIN old="hermite bias" new="Hermite Bias" />
+	  <PIN old="count" new="Spread Count" />
+	  <PIN old="spread" new="Output" />
+  	</NODE>
+  </PATCH>
+  <PATCH version="50alpha34.106">
+	<NODE old="VertexID (EX9 2d)" new="PointID (DX9 2d)">
+	  <PIN old="Scale" new="Size" />
+	  <PIN old="InputXY" new="XY" />
+	</NODE>
+	<NODE old="VertexID (EX9 3d)" new="PointID (DX9 3d)">
+	  <PIN old="InputXYZ" new="XYZ" />
+	</NODE>
+	<NODE old=":MODULES:\vvvv group\3D\B-Spline (3D).v4p" new="B-Spline (3d)">
+	  <PIN old="Control XYZ" new="ControlXYZ" />
+	  <PIN old="Ouput XYZ" new="OutputXYZ" />
+	</NODE>
+	<NODE old="B-Spline (3d)">
+	  <PIN old="Control XYZ" new="ControlXYZ" />
+	  <PIN old="Ouput XYZ" new="OutputXYZ" />
+	</NODE>
+	<NODE old="B-Spline (3d Wryly)">
+	  <PIN old="Ouput XYZ" new="OutputXYZ" />
+	</NODE>
+	<NODE old=":MODULES:\vvvv group\3D\B-Spline (3d Wryly).v4p" new="B-Spline (3d Wryly)">
+	  <PIN old="Ouput XYZ" new="OutputXYZ" />
+	</NODE>
+  </PATCH>
+  <PATCH version="50alpha34.107">
+	<NODE old="GridPoints (2d)" new="GridSpread (Spreads 2d)" />
+	<NODE old="GridPoints (3d)" new="GridSpread (Spreads 3d)" />
+	<NODE old="RandomPoints (2d)" new="RandomSpread (Spreads 2d)" >
+		<PIN old="Count" new="Spread Count" />
+	</NODE>
+	<NODE old="RandomPoints (3d)" new="RandomSpread (Spreads 3d)" >
+		<PIN old="Count" new="Spread Count" />
+	</NODE>
+	<NODE old="CircleSpread (2d)" new="CircularSpread (Spreads 2d)" />
+	<NODE old="HexGridPoints (2d)" new="HexGridSpread (Spreads 2d)" />
+	<NODE old="RectangleSpread (2d)" new="RectangleSpread (Spreads 2d)" />
+	<NODE old="SpiralSpread (2d)" new="SpiralSpread (Spreads 2d)" />
+	<NODE old="StarSpread (2d)" new="StarSpread (Spreads 2d)" />
+  </PATCH>
+  <PATCH version="50alpha34.108">
+  <NODE old="Select (2d)">
+    <PIN old="Input" new="InputXY" />
+    <PIN old="Output" new="OutputXY" />
+  </NODE>
+  <NODE old="Select (3d)">
+    <PIN old="Input" new="InputXYZ" />
+    <PIN old="Output" new="OutputXYZ" />
+  </NODE>
+  <NODE old="Select (4d)">
+    <PIN old="Input" new="InputXYZW" />
+    <PIN old="Output" new="OutputXYZW" />
+  </NODE>
+  </PATCH>
+  <PATCH version="50alpha35.1">
+  <NODE old="SelfAlign (EX9.Effect)" >
+	<PIN old="colore" new="Color" />
+	<PIN old="Second Transform" new="Transform in Viewspace" />
+  </NODE>
+  </PATCH>
+  <PATCH version="50alpha35.4">
+  <NODE old="MidiFile (Midi)" >
+	<PIN old="File Path" new="Filename" />
+  </NODE>
+  </PATCH>  
+  <PATCH version="50alpha35.5">
+  <NODE old="HTTP (Network Get)" new="HTTP (Network Get Legacy)" />
+  <NODE old="HTTP (Network Get String)" new="HTTP (Network Get String Legacy)" />
+  <NODE old="HTTP (Network Post)" new="HTTP (Network Post Legacy)" />
+  <NODE old="HTTP (Network Post String)" new="HTTP (Network Post String Legacy)" />
+  </PATCH> 
+  <PATCH version="50alpha35.7">
+  <NODE old="ArtNet (Network Sender)" new="ArtNet (Network Sender Legacy)" />
+  <NODE old="PointEditor (2d)">
+	<PIN old="PointEditor State" new="State" />
+  </NODE>
+  <NODE old="PointEditorView (DX9 2d)">
+	<PIN old="PointEditor State" new="State" />
+  </NODE>
+  <NODE old="PointEditorState (EditingFramework 2d Boygroup)">
+	<PIN old="PointEditor State" new="State" />
+  </NODE>
+  <NODE old="PointEditorView (DX11 2d)">
+	<PIN old="PointEditor State" new="State" />
+  </NODE>
+  <NODE old="PointEditor (3d)">
+	<PIN old="PointEditor State" new="State" />
+  </NODE>
+  <NODE old="PointEditorView (DX9 3d)">
+	<PIN old="PointEditor State" new="State" />
+  </NODE>
+  <NODE old="PointEditorState (EditingFramework 3d Boygroup)">
+	<PIN old="PointEditor State" new="State" />
+	<PIN old="EditablePoint" new="State" />
+  </NODE>
+  <NODE old="PointEditorView (DX11 3d)">
+	<PIN old="PointEditor State" new="State" />
+  </NODE>
+  <NODE old="BezierEditor (2d)">
+	<PIN old="BezierEditor State" new="State" />
+  </NODE>
+  <NODE old="BezierEditorState (EditingFramework 2d Boygroup)">
+	<PIN old="BezierEditor State" new="State" />
+  </NODE>
+  <NODE old="BezierEditorView (DX9 2d)">
+	<PIN old="BezierPointEditorState" new="State" />
+  </NODE>
+  <NODE old="BezierEditorView (DX11 2d)">
+	<PIN old="BezierPointEditorState" new="State" />
+  </NODE>
+  <NODE old="BezierEditor (3d)">
+	<PIN old="BezierEditorState" new="State" />
+  </NODE>
+  <NODE old="BezierEditorState (EditingFramework 3d Boygroup)">
+	<PIN old="BezierEditor State" new="State" />
+  </NODE>
+  <NODE old="BezierEditorView (DX9 3d)">
+	<PIN old="BezierPointEditorState" new="State" />
+  </NODE>
+  <NODE old="BezierEditorView (DX11 3d)">
+	<PIN old="BezierPointEditorState" new="State" />
+  </NODE>
+  <NODE old="BezierPatchEditor (2d)">
+	<PIN old="PointEditor State" new="State" />
+  </NODE>
+  <NODE old="BezierPatchEditor (3d)">
+	<PIN old="PointEditor State" new="State" />
+  </NODE>
+  <NODE old="MeshEditor (EX9)">
+	<PIN old="PointEditor State" new="State" />
+  </NODE>
+  <NODE old="Point (DX9 3d)">
+	<PIN old="Translate XYZ" new="XYZ" />
+  </NODE>
+  </PATCH> 
 </CONVVVVERTER>

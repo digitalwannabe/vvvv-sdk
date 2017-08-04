@@ -323,7 +323,7 @@ namespace VVVV.Hosting.IO
                               var attribute = context.IOAttribute;
                               if (t.IsGenericType && t.GetGenericArguments().Length == 1)
                               {
-                                  if (typeof(IInStream<>).MakeGenericType(t.GetGenericArguments().First()).IsAssignableFrom(t))
+                                  if (attribute.IsBinSizeEnabled && typeof(IInStream<>).MakeGenericType(t.GetGenericArguments().First()).IsAssignableFrom(t))
                                   {
                                       var multiDimStreamType = typeof(MultiDimInStream<>).MakeGenericType(t.GetGenericArguments().First());
                                       if (attribute.IsPinGroup)
@@ -358,7 +358,10 @@ namespace VVVV.Hosting.IO
                                   else
                                   {
                                       container = factory.CreateIOContainer(context.ReplaceIOType(typeof(INodeIn)));
-                                      stream = Activator.CreateInstance(typeof(NodeInStream<>).MakeGenericType(context.DataType), container.RawIOObject, new DefaultConnectionHandler(), context.IOAttribute.DefaultNodeValue) as IInStream;
+                                      var dataType = context.DataType;
+                                      var uncheckedDefaultValue = context.IOAttribute.DefaultNodeValue;
+                                      var defaultValue = uncheckedDefaultValue != null && dataType.IsAssignableFrom(uncheckedDefaultValue.GetType()) ? uncheckedDefaultValue : dataType.IsValueType ? Activator.CreateInstance(dataType) : null;
+                                      stream = Activator.CreateInstance(typeof(NodeInStream<>).MakeGenericType(context.DataType), container.RawIOObject, null, defaultValue) as IInStream;
                                   }
                                   // Using MemoryIOStream -> needs to be synced on managed side.
                                   if (attribute.AutoValidate)
@@ -558,7 +561,7 @@ namespace VVVV.Hosting.IO
                                    Type streamType = null;
                                    switch (genericArguments.Length) {
                                        case 1:
-                                           if (typeof(IInStream<>).MakeGenericType(genericArguments).IsAssignableFrom(t))
+                                           if (attribute.IsBinSizeEnabled && typeof(IInStream<>).MakeGenericType(genericArguments).IsAssignableFrom(t))
                                            {
                                                var multiDimStreamType = typeof(MultiDimOutStream<>).MakeGenericType(t.GetGenericArguments().First());
                                                var stream = Activator.CreateInstance(multiDimStreamType, factory, attribute.Clone()) as IOutStream;
