@@ -11,6 +11,11 @@ using VVVV.PluginInterfaces.V2;
 using VVVV.Utils.VColor;
 using VVVV.Utils.VMath;
 
+using SlimDX;
+using SlimDX.Direct3D11;
+using FeralTic.DX11;
+using FeralTic.DX11.Resources;
+
 //using VVVV.DX11.Core;
 
 using Mpir.NET;
@@ -33,6 +38,9 @@ namespace VVVV.Nodes
 
         [Input("Value")]
         public ISpread<int> FValue;
+
+        [Input("Value Buffer")]
+        public ISpread<SlimDX.Direct3D11.Buffer> FValueBuf;
 
         [Input("Start Pixel")]
         public ISpread<int> FStart;
