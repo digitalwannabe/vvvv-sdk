@@ -1,0 +1,9 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<configuration>
+  <appSettings>
+    <add key="AWSProfileName" value="profile1"/>
+    <add key="AWSAccessKey" value="ENTER_YOUR_ACCESS_KEY"/>
+    <add key="AWSSecretKey" value="ENTER_YOUR_SECRET_KEY"/>
+
+  </appSettings>
+</configuration>
