@@ -6,70 +6,51 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Linq;
 
-using NodaTime;
 
 using VVVV.PluginInterfaces.V1;
 using VVVV.PluginInterfaces.V2;
 using VVVV.Utils.VColor;
 using VVVV.Utils.VMath;
 
-using VVVV.Core.Logging;
 
 using Mpir.NET;
+
+using VVVV.Core.Logging;
 #endregion usings
 
 namespace VVVV.Nodes
 {
-    [PluginInfo(Name = "DateTime", Category = "BigInteger", Help = "Compute dates > 10.000 AD")]
+    [PluginInfo(Name = "AsString", Category = "MPIR BigInteger", Help = "mpir toString method")]
     public class BigSumProductsNode : IPluginEvaluate, IPartImportsSatisfiedNotification, IDisposable
     {
+        
+
         [Input("Input")]
         public ISpread<mpz_t> FIn;
 
-        [Input("Start Date")]
-        public ISpread<DateTime> FStartTime;
+        /*
+                [Input("Value Buffer")]
+                public ISpread<SlimDX.Direct3D11.Buffer> FValueBuf;
+        */
+
+        [Input("Cancel", IsBang = true, IsSingle = false)]
+		public ISpread<bool> FCancel;
 
         [Input("Calculate", IsBang = true, IsSingle = true)]
         public ISpread<bool> FDoItIn;
 
 
-
         [Output("Success")]
         public ISpread<bool> FReadyOut;
 
-        [Output("Time")]
-        public ISpread<string> FStringTime;
-
-        [Output("Date")]
-        public ISpread<string> FStringDate;
-
-        [Output("Year")]
-        public ISpread<string> FStringYear;
+        [Output("Output String")]
+        public ISpread<string> FStringOut;
 
         [Import]
         public ILogger FLogger;
 
         private readonly Spread<Task> FTasks = new Spread<Task>();
         private CancellationTokenSource FCts;
-
-        const int hours = 24;
-        const int minutes = 60;
-        const int seconds = 60;
-        const int milliseconds = 1000;
-        const int ticks = 10000;
-        const int frames = 60;
-        const long hmsmt = hours * minutes * seconds * milliseconds * (long)ticks; //convert ticks to long to avoid oveflow
-        const long hmsf = hours * minutes * seconds * frames;
-
-        string[] months = {"January","February","March","April","May","June","July","August","September","October","November","December"};
-
-
-        /*every 4 years there is a leap year, every 100 years the leap year is skipped, every 400 years it is NOT skipped- in other words, 
-        in 400 years there are 97 days added. In order to 'land' at the same date and time in 400 years we need to go 97 days further
-        than 400*365 */
-        const long daysIn400years = 303 * 365 + 97 * 366;
-        const long framesIn400years = daysIn400years * hmsf;
-        //       const UInt64 daysIn400years = 303 * 365 + 97 * 366;
 
         // Called when this plugin was created
         public void OnImportsSatisfied()
@@ -89,52 +70,16 @@ namespace VVVV.Nodes
             CancelRunningTasks();
         }
 
-        //Convert frames to ticks
-        private long FramesToTicks(mpz_t framesToConvert)
-        {
-            long result = ((long)framesToConvert / frames) * milliseconds * ticks;
-            return result;
-        }
-
-        //Convert frames to date
-        private mpz_t FramesToYear(mpz_t frames)
-        {
-            mpz_t year = (frames / seconds) * milliseconds * ticks;
-            return year;
-        }
-
-        private void FramesToDateTime(mpz_t framesPassed, DateTime startTime, out mpz_t years, out string time, out string date) {
-
-            mpz_t remainder400s = new mpz_t(0);
-            mpz_t number400s = new mpz_t(0); //System.Numerics.BigInteger.DivRem(framesPassed, framesIn400years, out remainder400s);
-
-            Mpir.NET.mpir.mpz_tdiv_qr(number400s, remainder400s, framesPassed, framesIn400years);
-
-
-            //calculate date and time (but not year) by only adding the remainder of above division, ie less than 400 years
-            //from the algorithm start
-            long fromStart = startTime.Ticks + FramesToTicks(remainder400s);
-            DateTime minus400sFromStart = new DateTime(fromStart);
-
-            
-            LocalDateTime minus400sFromStartLocal = NodaTime.Extensions.DateTimeExtensions.ToLocalDateTime(minus400sFromStart); //converting to NodaTime here to work with periods (which know years)
-            LocalDateTime startTimeLocal = NodaTime.Extensions.DateTimeExtensions.ToLocalDateTime(startTime);
-            
-            //calculate number of years from start; using Nodatime as it knows timespans longer than a year
-            Period period = Period.Between(startTimeLocal, minus400sFromStartLocal);
-
-            years = number400s*400 + period.Years + startTime.Year;//
-
-            //essentially the same as minus400sFromStartLocal...?
-    //        LocalDateTime finalMinus400s = startTimeLocal.Plus(period);
-            
-            time = minus400sFromStartLocal.TimeOfDay.ToString();
-            date = minus400sFromStartLocal.DayOfWeek.ToString() + ", " + months[minus400sFromStartLocal.Month - 1] + " " + minus400sFromStartLocal.Day.ToString();
-        }
 
         // Called when data for any output pin is requested
         public void Evaluate(int SpreadMax)
         {
+
+            if (FCancel[0])
+            {
+                CancelRunningTasks();
+            }
+
             if (FDoItIn[0])
             {
                 // Let's first cancel all running tasks (if any).
@@ -145,23 +90,18 @@ namespace VVVV.Nodes
                 // the new tasks we setup up now.
                 var ct = FCts.Token;
                 // Set the slice counts of our outputs.
-                FStringYear.SliceCount = SpreadMax;
-                FStringDate.SliceCount = SpreadMax;
-                FStringTime.SliceCount = SpreadMax;
+                SpreadMax = SpreadUtils.SpreadMax(FIn/*,FPA,FPM*/);
+                FStringOut.SliceCount = SpreadMax;
                 FReadyOut.SliceCount = SpreadMax;
                 // Setup the new tasks.
                 FTasks.SliceCount = SpreadMax;
-                for (int i = 0; i < FReadyOut.SliceCount; i++)
+                for (int i = 0; i < SpreadMax; i++)
                 {
                     int index = i;
-
                     // Reset the outputs and the ready state
-                    FStringYear[index] = string.Empty;
-                    FStringDate[index] = string.Empty;
-                    FStringTime[index] = string.Empty;
+                    FStringOut[index] = string.Empty;
                     FReadyOut[index] = false;
-
-
+                    
                     // Now setup a new task which will perform the long running
                     // computation on the thread pool of the system.
                     var task = Task.Factory.StartNew(() =>
@@ -177,15 +117,17 @@ namespace VVVV.Nodes
 
                         // Here is the actual computation:
 
-                        string date, time;
-                        mpz_t years;
-                        FramesToDateTime(FIn[index], FStartTime[index], out years, out time, out date);
-                        
+
+                        var result = FIn[index];
+
+                        //                       mpz_t a = new mpz_t(FBase[i]);
+                        //                       mpz_t result = new mpz_t(a.Power(FExp[i]));
 
                         // Note that the ToString method will take the most time 
                         // in this particular example, so we'll also compute it in
                         // background.
-                        return new { YearAsString = years.ToString(), TimeString = time, DateString = date };
+                        return new { ValueAsString = result.ToString() };
+ //                       result.Dispose();
                     },
                         // The cancellation token should also be passed to the StartNew method.
                         // For details see http://msdn.microsoft.com/en-us/library/dd997396%28v=vs.110%29.aspx
@@ -198,12 +140,11 @@ namespace VVVV.Nodes
                     ).ContinueWith(t =>
                     {
                         // Write the result to the outputs
-                        FStringYear[index] = t.Result.YearAsString;
+ //                       FOutput[index] = t.Result.Value;
                         // Note that in this particular example writing out the string
                         // will take a very long time - so should more or less be seen
                         // as a debug output.
-                        FStringTime[index] = t.Result.TimeString;
-                        FStringDate[index] = t.Result.DateString;
+                        FStringOut[index] = t.Result.ValueAsString;
                         // And set the ready state to true
                         FReadyOut[index] = true;
                     },
@@ -218,7 +159,7 @@ namespace VVVV.Nodes
                     );
                     // Now save the task in our internal task spread so we're able to cancel
                     // it later on.
-                    FTasks[i] = task;
+                    FTasks[index] = task;
                 }
             }
         }

@@ -32,6 +32,9 @@ namespace VVVV.Nodes
         [Input("Key")]
         IDiffSpread<string> FPinInKey;
 
+        [Input("VersionID")]
+        IDiffSpread<string> FPinInVersionID;
+
         [Input("Bucket")]
         IDiffSpread<string> FPinInBucket;
 
@@ -72,7 +75,7 @@ namespace VVVV.Nodes
         }
 
 
-        public bool downloadMyFileFromS3(string localFileDestination, string bucketName, string subDirectoryInBucket, string fileNameInS3)
+        public bool downloadMyFileFromS3(string localFileDestination, string bucketName, string subDirectoryInBucket, string fileNameInS3, string versionID)
         {
             // input explained :
             // localFilePath = the full local file path e.g. "c:\mydir\mysubdir\myfilename.zip"
@@ -104,9 +107,9 @@ namespace VVVV.Nodes
                 }
 
                 request.Key = fileNameInS3; //file name up in S3
+                request.VersionId = versionID;
                 request.FilePath = localFileDestination; //local file name
-
-                utility.Download(localFileDestination, request.BucketName, fileNameInS3) ; //commensing the transfer
+                utility.Download(request) ; //commensing the transfer
                 FLogger.Log(LogType.Debug, "Download successful!");
                 return true; //indicate that the file was sent
             }
@@ -124,7 +127,7 @@ namespace VVVV.Nodes
 
             if (FPinInDoSend[0])
             {
-                SpreadMax = SpreadUtils.SpreadMax(FPinInDoSend, FPinInDir, FPinInBucket, FPinInKey, FPinInSubdir);
+                SpreadMax = SpreadUtils.SpreadMax(FPinInDoSend, FPinInDir, FPinInBucket, FPinInKey, FPinInVersionID, FPinInSubdir);
 
 
                 // Let's first cancel all running tasks (if any).
@@ -171,8 +174,9 @@ namespace VVVV.Nodes
                         string myBucketName = FPinInBucket[i]; //your s3 bucket name goes here
                         string s3DirectoryName = FPinInSubdir[i];
                         string s3FileName = FPinInKey[i];
+                        string s3VersionID = FPinInVersionID[i];
 
-                        var result = downloadMyFileFromS3(localFileDestination, myBucketName, s3DirectoryName, s3FileName);
+                        var result = downloadMyFileFromS3(localFileDestination, myBucketName, s3DirectoryName, s3FileName, s3VersionID);
 
                         // Note that the ToString method will take the most time 
                         // in this particular example, so we'll also compute it in

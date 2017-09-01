@@ -5,16 +5,22 @@ using System.Numerics;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Linq;
+using System.Drawing;
+using System.Drawing.Imaging;
+using System.Drawing.Drawing2D;
+
 
 using VVVV.PluginInterfaces.V1;
 using VVVV.PluginInterfaces.V2;
+using VVVV.PluginInterfaces.V2.EX9;
 using VVVV.Utils.VColor;
 using VVVV.Utils.VMath;
 
-using SlimDX;
-using SlimDX.Direct3D11;
-using FeralTic.DX11;
-using FeralTic.DX11.Resources;
+//using SlimDX;
+//using SlimDX.Direct3D11;
+using SlimDX.Direct3D9;
+//using FeralTic.DX11;
+//using FeralTic.DX11.Resources;
 
 //using VVVV.DX11.Core;
 
@@ -39,9 +45,12 @@ namespace VVVV.Nodes
         [Input("Value")]
         public ISpread<int> FValue;
 
-        [Input("Value Buffer")]
-        public ISpread<SlimDX.Direct3D11.Buffer> FValueBuf;
-
+        [Input("Texture Filename", StringType = StringType.Filename)]
+        public IDiffSpread<string> FTexFileName;
+        /*
+                [Input("Value Buffer")]
+                public ISpread<SlimDX.Direct3D11.Buffer> FValueBuf;
+        */
         [Input("Start Pixel")]
         public ISpread<int> FStart;
 
@@ -118,6 +127,14 @@ namespace VVVV.Nodes
                     FOutput[index] = default(mpz_t);
                     FStringOut[index] = string.Empty;
                     FReadyOut[index] = false;
+                    // Create a Bitmap object from an image file.
+                    Bitmap bmp = new Bitmap(FTexFileName[index]);
+                    
+
+                    // Get the color of a pixel within myBitmap.
+ //                   Color pixelColor = myBitmap.GetPixel(50, 50);
+
+
 
                     // Now setup a new task which will perform the long running
                     // computation on the thread pool of the system.
@@ -135,19 +152,30 @@ namespace VVVV.Nodes
                         // Here is the actual computation:
                         int numPixels = FPixel[index];
                         int numColors = FColors[index];
+
+                        double dim = Math.Sqrt(numPixels);
+                        double colorDim = Math.Pow(numColors, 1.0 / 3.0);
                         
                         mpz_t result = new mpz_t(0);
                         
                         mpz_t a = new mpz_t(numColors);
 
+//                        float factor = FValueBuf[0].ComPointer.
+
  //                       try
  //                       {
 
-                            for (int j = FStart[index]; j < numPixels; j++)
+                        for (int j = FStart[index]; j < numPixels; j++)
                             {
                                 int jndex = j;
-                                //                            mpz_t op = new mpz_t((a.Power(jndex)).Multiply(FValue[jndex]));
-                                result = result.Add(a.Power(jndex).Multiply(FValue[jndex]));
+                                int x;
+                                int y = Math.DivRem(jndex, (int)dim, out x);
+
+                                // Get the color of a pixel within bmp.
+                                Color pixelColor = bmp.GetPixel(x, y);
+                                double colIndex = pixelColor.B*colorDim*colorDim + pixelColor.G*colorDim + pixelColor.R;
+                            //                            mpz_t op = new mpz_t((a.Power(jndex)).Multiply(FValue[jndex]));
+                            result = result.Add(a.Power(jndex).Multiply(colIndex));
                                 //                            result +=op;
                                 //                            op.Dispose();
                             }

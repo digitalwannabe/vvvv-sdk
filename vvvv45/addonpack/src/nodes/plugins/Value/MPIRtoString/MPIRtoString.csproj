@@ -5,8 +5,8 @@
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <RootNamespace>VVVV.Nodes</RootNamespace>
-    <AssemblyName>MPIRsumProducts</AssemblyName>
-    <ProjectGuid>{082C09CA-0006-4C57-A674-B227F3A8E4EC}</ProjectGuid>
+    <AssemblyName>MPIRtoString</AssemblyName>
+    <ProjectGuid>{0EB7508C-D6D3-47CC-AAA6-92C8DDCC819C}</ProjectGuid>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <NuGetPackageImportStamp>
     </NuGetPackageImportStamp>
@@ -34,10 +34,6 @@
       <Private>True</Private>
       <Private>False</Private>
     </Reference>
-    <Reference Include="VVVV.PluginInterfaces, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\..\lib\core\VVVV.PluginInterfaces.dll</HintPath>
-    </Reference>
     <Reference Include="VVVV.Utils, Version=35.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\..\..\..\..\packages\VVVV.Utils.35.8.0\lib\net46\VVVV.Utils.dll</HintPath>
@@ -47,7 +43,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />
-    <Compile Include="MPIRsumProducts.cs" />
+    <Compile Include="MPIRtoString.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\..\..\..\src\core\PluginInterfaces\PluginInterfaces.csproj">
@@ -71,12 +67,8 @@
     <PropertyGroup>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
-    <Error Condition="!Exists('..\..\..\..\..\..\..\packages\VVVV.FeralTic.1.0.1\build\net40\VVVV.FeralTic.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\..\..\..\..\..\packages\VVVV.FeralTic.1.0.1\build\net40\VVVV.FeralTic.targets'))" />
-    <Error Condition="!Exists('..\..\..\..\..\..\..\packages\VVVV.DX11.Core.32.1.1\build\net40\VVVV.DX11.Core.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\..\..\..\..\..\packages\VVVV.DX11.Core.32.1.1\build\net40\VVVV.DX11.Core.targets'))" />
     <Error Condition="!Exists('..\..\..\..\..\..\..\packages\VVVV.SlimDX.1.0.2\build\net40\VVVV.SlimDX.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\..\..\..\..\..\packages\VVVV.SlimDX.1.0.2\build\net40\VVVV.SlimDX.props'))" />
     <Error Condition="!Exists('..\..\..\..\..\..\..\packages\VVVV.SlimDX.1.0.2\build\net40\VVVV.SlimDX.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\..\..\..\..\..\packages\VVVV.SlimDX.1.0.2\build\net40\VVVV.SlimDX.targets'))" />
   </Target>
-  <Import Project="..\..\..\..\..\..\..\packages\VVVV.FeralTic.1.0.1\build\net40\VVVV.FeralTic.targets" Condition="Exists('..\..\..\..\..\..\..\packages\VVVV.FeralTic.1.0.1\build\net40\VVVV.FeralTic.targets')" />
-  <Import Project="..\..\..\..\..\..\..\packages\VVVV.DX11.Core.32.1.1\build\net40\VVVV.DX11.Core.targets" Condition="Exists('..\..\..\..\..\..\..\packages\VVVV.DX11.Core.32.1.1\build\net40\VVVV.DX11.Core.targets')" />
   <Import Project="..\..\..\..\..\..\..\packages\VVVV.SlimDX.1.0.2\build\net40\VVVV.SlimDX.targets" Condition="Exists('..\..\..\..\..\..\..\packages\VVVV.SlimDX.1.0.2\build\net40\VVVV.SlimDX.targets')" />
 </Project>
