@@ -14,6 +14,53 @@ using System.Net;
 
 namespace VVVV.Nodes.File
 {
+    public sealed class DisposableScope : IDisposable
+    {
+        private readonly Action _closeScopeAction;
+        public DisposableScope(Action closeScopeAction)
+        {
+            _closeScopeAction = closeScopeAction;
+        }
+        public void Dispose()
+        {
+            _closeScopeAction();
+        }
+    }
+
+
+    public static class extensionMethod
+    {
+        public static IDisposable CreateTimeoutScope(this IDisposable disposable)
+        {
+            var cancellationTokenSource = new CancellationTokenSource();
+            var cancellationTokenRegistration = cancellationTokenSource.Token.Register(disposable.Dispose);
+            return new DisposableScope(
+                () =>
+                {
+                    cancellationTokenRegistration.Dispose();
+                    cancellationTokenSource.Dispose();
+                    disposable.Dispose();
+                });
+        }
+
+        public static IDisposable CreateTimeoutScope(this IDisposable disposable, int ms)
+        {
+            var cancellationTokenSource = new CancellationTokenSource(ms);
+            var cancellationTokenRegistration = cancellationTokenSource.Token.Register(disposable.Dispose);
+            return new DisposableScope(
+                () =>
+                {
+                    cancellationTokenRegistration.Dispose();
+                    cancellationTokenSource.Dispose();
+                    disposable.Dispose();
+                });
+        }
+
+    }
+
+
+
+
     [PluginInfo(
         Name = "UDP Receive",
         Category = "Network",
@@ -31,10 +78,12 @@ namespace VVVV.Nodes.File
 //        public ISpread<string> Output;
 //        [Output("Output2")]
 //        public ISpread<string> Output2;
-//        [Output("Output Raw", IsSingle = true)]
-//        public ISpread<Stream> OutputRaw;
-//        [Output("Output Raw Oldest", IsSingle = true)]
- //       public ISpread<Stream> OutputRawOldest;
+        [Output("Output Raw Newest", IsSingle = true)]
+        public ISpread<Stream> OutputRawNewest;
+        [Output("Output Raw Oldest", IsSingle = true)]
+        public ISpread<Stream> OutputRawOldest;
+        [Output("Output Raw Buffered", IsSingle = true)]
+        public ISpread<Stream> OutputRawBuffered;
         [Output("Output Raw Spread")]
         public ISpread<Stream> OutputRawSpread;
 
@@ -45,23 +94,38 @@ namespace VVVV.Nodes.File
 
 
         private Task Receiver;
-//        private string Receivestring;
         private byte[] resultarray;
-        UdpClient udp;
-        private List<string> stringBuffer;
         private Stack<byte[]> byteStack;
+        private Stack<byte[]> byteStackSwap;
+        int counter;
+
+
 
         public async Task ReceiveMessage(int port)
         {
 
-            var tcs = new TaskCompletionSource<bool>();
-            using (udp = new UdpClient(port))
+            var udp = new UdpClient(port);
+            using (udp.CreateTimeoutScope(100))
             {
+
                 while (true)
-                {                    
-                    var receivedResult = await udp.ReceiveAsync();
-                    resultarray = receivedResult.Buffer;
-                    byteStack.Push(resultarray);               
+                {
+                    try {
+                        var receivedResult = await udp.ReceiveAsync();                                               
+                        resultarray = receivedResult.Buffer;
+                        byteStack.Push(resultarray);
+                    }
+                    catch (ObjectDisposedException e)
+                    {
+//                        Logger.Log(LogType.Message,e.ToString());
+                        return;
+                    }
+                    catch (Exception e)
+                    {
+                        //                       Logger.Log(LogType.Error, e.ToString());
+                        return;
+                    }
+                                   
                 }
                 
             }
@@ -70,122 +134,106 @@ namespace VVVV.Nodes.File
 
         public void Evaluate(int spreadMax)
         {
-            //           stringBuffer = new List<string>();
-            //            OutputRaw.SliceCount = 1;
-            //            Output2.SliceCount = 1;
-
-            OutputRawSpread.SliceCount = 1;
-
             var port = Port[0];
             var doListen = DoListen[0];
+            
             if (doListen)
             {
                 if (Receiver == null || Receiver.IsCompleted || Receiver.IsFaulted)
                 {
                     Receiver = ReceiveMessage(port);
- //                   Receiver.Start();
                 }
+
 
                 if (Port.IsChanged)
                 {
-                    udp.Close();
-//                    Receiver.Dispose();
+                    Receiver.CreateTimeoutScope();
                     Receiver = ReceiveMessage(port);
-//                    Receiver.Start();
                 }
+
+                Stack<byte[]> stackNow = byteStack;
+
+                int byteArrayCount = stackNow.Count;
+                OutputDebug[0] = byteStackSwap.Count;
+                stackNow.Reverse();
                 
-            }
 
-            if (!doListen)
-            {
-                if(Receiver != null )
+
+                if (byteArrayCount > 0)
                 {
-                    udp.Close();
+
+                    OutputRawNewest[0] = new MemoryComStream(stackNow.First());
+                    
+                    OutputRawOldest[0] = new MemoryComStream(stackNow.Last());
+                    OutputRawBuffered[0] = new MemoryComStream(stackNow.Last());
+                    OutputRawSpread.SliceCount = byteArrayCount;
+                    for (int i = 0; i < byteArrayCount; i++)
+                    {
+                        byteStackSwap.Push(stackNow.ElementAt(i));
+                        OutputRawSpread[i] = new MemoryComStream(stackNow.ElementAt(i));
+                        
+                    }
+                    OutputRawSpread.Reverse();
                 }
 
+                else
+                {
+                    //
+                    if (byteStackSwap.Count > 0)
+                    {
+                        //                        Logger.Log(LogType.Message, "i was here2");
+                        byteStackSwap.Reverse();
+                        byteStackSwap.Pop();
+                        
+                        OutputRawOldest[0] = new MemoryComStream(byteStackSwap.Last());
+
+                    }
+                        byteStackSwap.Clear();
+                    
+                    
+                }
+                byteStack.Clear();
+
+            }
+            else //if !doListen
+            {
+                if(Receiver == null)//this is only in case of init
+                {
+                    Receiver = ReceiveMessage(port);
+                }
+                if (Receiver != null)
+                {
+                    Receiver.CreateTimeoutScope();
+                }
                 if (Receiver.IsCompleted || Receiver.IsFaulted)
                 {
                     Receiver.Dispose();
                 }
+            }
 
-
-           }
             
-//            OutputRaw[0] = new MemoryComStream(resultarray);
-
-            int byteArrayCount =  byteStack.Count;
-            OutputDebug[0] = byteArrayCount;
-            
-
-           
-            byteStack.Reverse();
-            Stack<byte[]> buf2 = byteStack;
-
-
-            if (byteArrayCount > 0)
-            {
-                //               Output.SliceCount = stringCount;
-                OutputRawSpread.SliceCount = byteArrayCount;
-                for (int i = 0; i < byteArrayCount; i++)
-                {
-                    OutputRawSpread[i] = new MemoryComStream(byteStack.ElementAt(i));
-                }
-                OutputRawSpread.Reverse();
-/*                OutputRawOldest[0] = new MemoryComStream(byteStack.Last());
-                if (byteArrayCount > 1)
-                {
-                    buf2.Pop();
-                }
-                */
-
-            }/*
-            else
-            {
-                if (buf2.Count > 0)
-                {
-//                    OutputRawSpread.SliceCount = 1;
-//                    OutputRawSpread[0] = new MemoryComStream(byteStack.Last());
-                    OutputRawOldest[0] = new MemoryComStream(buf2.Last());
-/*                    int outCount = buf2.Count;
-                    Output.SliceCount = outCount;
-                    for (int i =0; i < outCount; i++)
-                    {
-                        Output[i] = buf2.Pop();
-                    }*/
-//                }
-                
-
-
-
- //           }
-           
-            stringBuffer.Clear();
-            byteStack.Clear();
         }
 
         public void Dispose()
         {
+            Receiver.CreateTimeoutScope();
 
-            udp.Close();
-            udp.Dispose();
-            Receiver.Dispose();
+            if (Receiver.IsCompleted || Receiver.IsFaulted)
+            {
+                Receiver.Dispose();
+            }
         }
-
-
 
 
         public void OnImportsSatisfied()
         {
- //           Output.SliceCount = 1;
-//            OutputRaw.SliceCount = 1;
             OutputRawSpread.SliceCount = 1;
-//            OutputRawOldest.SliceCount = 1;
+            OutputRawNewest.SliceCount = 1;
+            OutputRawBuffered.SliceCount = 1;
             OutputDebug.SliceCount = 1;
-            stringBuffer = new List<string>();
             byteStack = new Stack<byte[]>();
-
-//            resultarray.
-//            Receiver = ReceiveMessage(Port[0]);
+            byteStackSwap = new Stack<byte[]>();
+            counter = 0;
         }
     }
 }
